@@ -38,7 +38,7 @@ export default {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/forms'), // Optional
-  ],
+  // plugins: [
+  //   require('@tailwindcss/forms'), // Optional
+  // ],
 }
