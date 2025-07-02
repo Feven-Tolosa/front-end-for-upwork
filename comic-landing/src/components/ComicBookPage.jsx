@@ -1,128 +1,77 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const ComicBookPage = () => {
   const [coloredPixels, setColoredPixels] = useState([])
   const [currentPage, setCurrentPage] = useState(0)
   const [isTurning, setIsTurning] = useState(false)
   const containerRef = useRef(null)
-  const textRefs = useRef([])
 
-  // Sample comic book content
+  // Demo content
   const pages = [
     {
       title: 'WELCOME TO THE COMIC ZONE',
-      content:
-        'This is where your adventure begins. Explore our world as it comes to life beneath your cursor.',
-      background:
-        "bg-[url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')]",
+      content: 'Move your cursor to reveal color! Scroll to turn pages.',
+      background: 'bg-gradient-to-br from-gray-900 to-gray-700',
     },
     {
-      title: 'OUR HEROES',
-      content:
-        'Meet the characters that will guide you through this journey. Each with unique powers and stories.',
-      background:
-        "bg-[url('https://images.unsplash.com/photo-1534802046520-4f27db7f3ae5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')]",
-    },
-    {
-      title: 'THE STORY',
-      content:
-        'Dive into an epic narrative that unfolds with every page turn. What mysteries await?',
-      background:
-        "bg-[url('https://images.unsplash.com/photo-1518655048521-f130df041f66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')]",
-    },
-    {
-      title: 'JOIN US',
-      content:
-        'Become part of our community and create your own comic adventures!',
-      background:
-        "bg-[url('https://images.unsplash.com/photo-1511512578047-dfb367046420?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80')]",
+      title: 'PAGE 2',
+      content: 'This is the second page of our comic adventure.',
+      background: 'bg-gradient-to-br from-blue-900 to-blue-700',
     },
   ]
 
-  // Handle mouse movement to reveal color
   const handleMouseMove = (e) => {
-    if (isTurning) return
-
     const container = containerRef.current
-    if (!container) return
+    if (!container || isTurning) return
 
     const rect = container.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-
-    // More performant update
-    setColoredPixels((prev) => {
-      const newPixels = [...prev, { x, y, id: Date.now() + Math.random() }]
-      return newPixels.length > 1000 ? newPixels.slice(1) : newPixels
-    })
+    setColoredPixels((prev) => [
+      ...prev.slice(-1000), // Keep only 1000 pixels
+      {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        id: Date.now() + Math.random(),
+      },
+    ])
   }
 
-  // Handle scroll for page turn
   useEffect(() => {
     const handleScroll = (e) => {
       if (isTurning) return
-
-      // Use more sensitive threshold
-      const delta = Math.sign(e.deltaY)
-      if (delta > 0 && currentPage < pages.length - 1) {
+      if (e.deltaY > 5 && currentPage < pages.length - 1) {
         turnPage(currentPage + 1)
-      } else if (delta < 0 && currentPage > 0) {
+      } else if (e.deltaY < -5 && currentPage > 0) {
         turnPage(currentPage - 1)
       }
     }
 
-    window.addEventListener('wheel', handleScroll, { passive: false })
+    window.addEventListener('wheel', handleScroll)
     return () => window.removeEventListener('wheel', handleScroll)
   }, [currentPage, isTurning])
 
-  // Animate text letter by letter
-  useEffect(() => {
-    textRefs.current.forEach((ref, i) => {
-      if (ref) {
-        const text = ref.innerText
-        ref.innerText = ''
-
-        for (let j = 0; j < text.length; j++) {
-          setTimeout(() => {
-            const span = document.createElement('span')
-            span.textContent = text[j]
-            span.className = 'opacity-0 animate-fadeInComic'
-            span.style.animationDelay = `${j * 0.05}s`
-            ref.appendChild(span)
-          }, 100 + i * 200)
-        }
-      }
-    })
-  }, [currentPage])
-
-  // Page turn animation
   const turnPage = (newPage) => {
     setIsTurning(true)
     setTimeout(() => {
       setCurrentPage(newPage)
       setColoredPixels([])
       setIsTurning(false)
-    }, 1000) // Match this with animation duration
+    }, 1000)
   }
 
   return (
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className={`
-      relative w-screen h-screen overflow-hidden 
-      ${pages[currentPage].background} bg-cover bg-center bg-no-repeat
-      ${isTurning ? 'animate-pageTurn' : ''}
-      grayscale hover:grayscale-0 transition-all duration-500
-    `}
-      style={{ height: '100dvh' }} // Modern height unit
+      className={`relative w-full h-full ${pages[currentPage].background} ${
+        isTurning ? 'animate-pageTurn' : ''
+      }`}
     >
-      {/* Colored pixel overlay */}
+      {/* Color reveal effect */}
       <div className='absolute inset-0 pointer-events-none mix-blend-overlay'>
         {coloredPixels.map((pixel) => (
           <div
             key={pixel.id}
-            className='absolute w-24 h-24 rounded-full bg-gradient-to-b from-white/80 to-white/0 opacity-70'
+            className='absolute w-24 h-24 rounded-full bg-gradient-to-b from-yellow-400/80 to-transparent'
             style={{
               left: `${pixel.x}px`,
               top: `${pixel.y}px`,
@@ -132,47 +81,17 @@ const ComicBookPage = () => {
       </div>
 
       {/* Comic page content */}
-      <div className='relative w-4/5 h-4/5 mx-auto my-[5%] bg-white border-4 border-black shadow-xl p-8 overflow-hidden'>
-        <div className='relative z-10 h-full flex flex-col justify-center items-center text-center'>
-          <h1
-            ref={(el) => (textRefs.current[0] = el)}
-            className='text-5xl mb-8 uppercase tracking-wider text-black font-comic'
-          >
-            {pages[currentPage].title}
-          </h1>
-          <p
-            ref={(el) => (textRefs.current[1] = el)}
-            className='text-2xl max-w-[70%] leading-relaxed font-comic'
-          >
-            {pages[currentPage].content}
-          </p>
-        </div>
-
-        {/* Page corner for visual effect */}
-        <div className='absolute top-5 right-5 w-14 h-14 bg-gradient-to-br from-transparent from-50% to-gray-500 to-50% z-20'></div>
+      <div className='absolute inset-10 bg-white border-8 border-black p-8 overflow-hidden'>
+        <h1 className='text-4xl font-comic mb-4'>{pages[currentPage].title}</h1>
+        <p className='text-2xl font-comic'>{pages[currentPage].content}</p>
       </div>
 
-      {/* Page turn indicator */}
-      {currentPage < pages.length - 1 && (
-        <div className='fixed bottom-5 left-1/2 -translate-x-1/2 text-white text-xl text-shadow animate-bounce font-comic'>
-          ▼ Scroll to turn page ▼
-        </div>
-      )}
+      {/* Debug info - remove in production */}
+      <div className='absolute bottom-4 left-4 bg-black/80 text-white p-2 rounded'>
+        Page {currentPage + 1}/{pages.length} | Pixels: {coloredPixels.length}
+      </div>
     </div>
   )
 }
 
 export default ComicBookPage
-
-{
-  /* Add at the bottom of your component */
-}
-;<div className='fixed top-0 left-0 bg-black text-white p-2 z-50'>
-  Debug Info:
-  <br />
-  Current Page: {currentPage}
-  <br />
-  Is Turning: {isTurning.toString()}
-  <br />
-  Pixels: {coloredPixels.length}
-</div>
