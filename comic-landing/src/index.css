@@ -6,3 +6,11 @@
 body {
   @apply m-0 p-0 overflow-x-hidden bg-black text-black;
 }
+@layer utilities {
+  .animate-pageTurn {
+    animation: pageTurn 1s forwards;
+  }
+  .animate-fadeInComic {
+    animation: fadeInComic 0.3s forwards;
+  }
+}

@@ -50,14 +50,11 @@ const ComicBookPage = () => {
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
-    // Add new colored pixel
-    const newPixel = { x, y, id: Date.now() + Math.random() }
-    setColoredPixels((prev) => [...prev, newPixel])
-
-    // Remove oldest pixel if we have too many
-    if (coloredPixels.length > 1000) {
-      setColoredPixels((prev) => prev.slice(1))
-    }
+    // More performant update
+    setColoredPixels((prev) => {
+      const newPixels = [...prev, { x, y, id: Date.now() + Math.random() }]
+      return newPixels.length > 1000 ? newPixels.slice(1) : newPixels
+    })
   }
 
   // Handle scroll for page turn
@@ -65,17 +62,16 @@ const ComicBookPage = () => {
     const handleScroll = (e) => {
       if (isTurning) return
 
-      const delta = e.deltaY
-      if (delta > 5 && currentPage < pages.length - 1) {
-        // Scroll down - turn page forward
+      // Use more sensitive threshold
+      const delta = Math.sign(e.deltaY)
+      if (delta > 0 && currentPage < pages.length - 1) {
         turnPage(currentPage + 1)
-      } else if (delta < -5 && currentPage > 0) {
-        // Scroll up - turn page backward
+      } else if (delta < 0 && currentPage > 0) {
         turnPage(currentPage - 1)
       }
     }
 
-    window.addEventListener('wheel', handleScroll)
+    window.addEventListener('wheel', handleScroll, { passive: false })
     return () => window.removeEventListener('wheel', handleScroll)
   }, [currentPage, isTurning])
 
@@ -102,15 +98,11 @@ const ComicBookPage = () => {
   // Page turn animation
   const turnPage = (newPage) => {
     setIsTurning(true)
-    setCurrentPage(newPage)
-
-    // Reset colored pixels on new page
-    setColoredPixels([])
-
-    // Animation complete
     setTimeout(() => {
+      setCurrentPage(newPage)
+      setColoredPixels([])
       setIsTurning(false)
-    }, 1000)
+    }, 1000) // Match this with animation duration
   }
 
   return (
@@ -118,11 +110,12 @@ const ComicBookPage = () => {
       ref={containerRef}
       onMouseMove={handleMouseMove}
       className={`
-        relative w-screen h-screen overflow-hidden 
-        ${pages[currentPage].background} bg-cover bg-center
-        ${isTurning ? 'animate-pageTurn' : ''}
-        grayscale hover:grayscale-0 transition-all duration-500
-      `}
+      relative w-screen h-screen overflow-hidden 
+      ${pages[currentPage].background} bg-cover bg-center bg-no-repeat
+      ${isTurning ? 'animate-pageTurn' : ''}
+      grayscale hover:grayscale-0 transition-all duration-500
+    `}
+      style={{ height: '100dvh' }} // Modern height unit
     >
       {/* Colored pixel overlay */}
       <div className='absolute inset-0 pointer-events-none mix-blend-overlay'>
@@ -170,3 +163,16 @@ const ComicBookPage = () => {
 }
 
 export default ComicBookPage
+
+{
+  /* Add at the bottom of your component */
+}
+;<div className='fixed top-0 left-0 bg-black text-white p-2 z-50'>
+  Debug Info:
+  <br />
+  Current Page: {currentPage}
+  <br />
+  Is Turning: {isTurning.toString()}
+  <br />
+  Pixels: {coloredPixels.length}
+</div>
